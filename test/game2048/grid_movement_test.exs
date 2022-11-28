@@ -135,5 +135,28 @@ defmodule Game2048.GridMovementTest do
 
       assert new_grid.cells === expected_cells
     end
+
+    test "returns a new board with the tiles blocked by obstacle Tile" do
+      grid = %Grid{
+        cells: %{
+          %Coordinate{x: 1, y: 1} => Tile.new(2),
+          %Coordinate{x: 1, y: 2} => Tile.new(:empty),
+          %Coordinate{x: 1, y: 3} => Tile.new(:obstacle),
+          %Coordinate{x: 1, y: 4} => Tile.new(:empty)
+        },
+        size: %GridSize{column_count: 1, row_count: 4}
+      }
+
+      new_grid = Grid.move_tiles_in_direction(grid, :down)
+
+      expected_cells = %{
+        %Coordinate{x: 1, y: 1} => Tile.new(:empty),
+        %Coordinate{x: 1, y: 2} => %Tile{type: :number, value: 2, merged: false},
+        %Coordinate{x: 1, y: 3} => Tile.new(:obstacle),
+        %Coordinate{x: 1, y: 4} => Tile.new(:empty)
+      }
+
+      assert new_grid.cells === expected_cells
+    end
   end
 end

@@ -5,7 +5,7 @@ defmodule Game2048.Board do
   """
 
   alias __MODULE__
-  alias Game2048.{Grid, GridSize}
+  alias Game2048.{Grid, GridSize, Tile}
 
   @tile_spawn_value_after_move 1
 
@@ -18,6 +18,19 @@ defmodule Game2048.Board do
   @spec moves_available?(Game2048.Grid.t()) :: boolean
   def moves_available?(grid) do
     Grid.contains_empty_cells?(grid) or Grid.contains_combinable_cells?(grid)
+  end
+
+  @spec new(Game2048.GridSize.t(), pos_integer) :: Game2048.Board.t()
+  def new(%GridSize{} = grid_size, obstacle_count) when obstacle_count > 0 do
+    grid =
+      for _ <- 1..obstacle_count, reduce: Grid.new(grid_size) do
+        grid -> Grid.spawn_tile_at_random_empty_place(grid, Tile.new(:obstacle))
+      end
+
+    %Board{
+      grid: grid,
+      state: game_state(grid)
+    }
   end
 
   def new(%GridSize{} = grid_size) do
@@ -42,7 +55,10 @@ defmodule Game2048.Board do
           grid
 
         updated_grid ->
-          Grid.spawn_tile_at_random_empty_place(updated_grid, @tile_spawn_value_after_move)
+          Grid.spawn_tile_at_random_empty_place(
+            updated_grid,
+            Tile.new(@tile_spawn_value_after_move)
+          )
       end
 
     new_state = game_state(new_grid)

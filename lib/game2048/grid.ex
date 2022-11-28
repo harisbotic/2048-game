@@ -128,9 +128,9 @@ defmodule Game2048.Grid do
     end
   end
 
-  @spec spawn_tile(Game2048.Grid.t(), Game2048.Coordinate.t(), Game2048.Tile.t()) ::
+  @spec place_tile(Game2048.Grid.t(), Game2048.Coordinate.t(), Game2048.Tile.t()) ::
           Game2048.Grid.t()
-  def spawn_tile(%Grid{cells: cells} = grid, %Coordinate{} = coordinate, %Tile{} = tile) do
+  def place_tile(%Grid{cells: cells} = grid, %Coordinate{} = coordinate, %Tile{} = tile) do
     %Grid{
       grid
       | cells:
@@ -139,10 +139,17 @@ defmodule Game2048.Grid do
     }
   end
 
-  @spec spawn_tile_at_random_empty_place(Game2048.Grid.t(), integer) :: Game2048.Grid.t()
-  def spawn_tile_at_random_empty_place(%Grid{} = grid, tile_value) do
-    empty_coordinate = Enum.random(Grid.get_empty_coordinates(grid))
-    Grid.spawn_tile(grid, empty_coordinate, Tile.new(tile_value))
+  @spec spawn_tile_at_random_empty_place(Game2048.Grid.t(), Game2048.Tile.t()) ::
+          Game2048.Grid.t()
+  def spawn_tile_at_random_empty_place(%Grid{} = grid, %Tile{} = tile) do
+    case get_empty_coordinates(grid) do
+      [] ->
+        grid
+
+      empty_coordinates ->
+        empty_coordinate = Enum.random(empty_coordinates)
+        place_tile(grid, empty_coordinate, tile)
+    end
   end
 
   @spec move_tiles_in_direction(Game2048.Grid.t(), direction()) :: Game2048.Grid.t()
@@ -157,26 +164,30 @@ defmodule Game2048.Grid do
         coordinate = Coordinate.new(x, y)
         tile = grid.cells[coordinate]
 
-        %{
-          farthest_empty_coordinate: farthest_empty_coordinate,
-          next_nonempty_tile: next_nonempty_tile,
-          next_nonempty_coordinate: next_nonempty_coordinate
-        } = Grid.get_neighbor_cells(grid, coordinate, direction)
+        if tile.type !== :number do
+          grid
+        else
+          %{
+            farthest_empty_coordinate: farthest_empty_coordinate,
+            next_nonempty_tile: next_nonempty_tile,
+            next_nonempty_coordinate: next_nonempty_coordinate
+          } = Grid.get_neighbor_cells(grid, coordinate, direction)
 
-        case next_nonempty_tile do
-          %{type: :number, value: value} when value == tile.value ->
-            Grid.merge_tiles(
-              grid,
-              coordinate,
-              next_nonempty_coordinate
-            )
+          case next_nonempty_tile do
+            %{type: :number, value: value} when value == tile.value ->
+              Grid.merge_tiles(
+                grid,
+                coordinate,
+                next_nonempty_coordinate
+              )
 
-          _ ->
-            Grid.move_tile(
-              grid,
-              coordinate,
-              farthest_empty_coordinate
-            )
+            _ ->
+              Grid.move_tile(
+                grid,
+                coordinate,
+                farthest_empty_coordinate
+              )
+          end
         end
     end
   end

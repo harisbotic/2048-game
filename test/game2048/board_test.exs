@@ -17,7 +17,34 @@ defmodule Game2048.BoardTest do
       assert board.grid.cells === expected_cells
       assert board.state === :playing
     end
+  end
 
+  describe "new/2" do
+    test "returns a new board with a grid and obstacle tiles placed" do
+      obstacle_count = 3
+      board = Board.new(GridSize.new(2, 2), obstacle_count)
+
+      assert board.grid.cells
+             |> Enum.filter(fn {_, tile} -> tile.type == :obstacle end)
+             |> Enum.count() == obstacle_count
+    end
+
+    test "returns a new board with a game status :lost if obstacles fill the whole board" do
+      obstacle_count = 1
+      board = Board.new(GridSize.new(1, 1), obstacle_count)
+
+      assert board.state === :lost
+    end
+
+    test "returns a new board without errors if there are more obstacles than cells" do
+      obstacle_count = 5
+      board = Board.new(GridSize.new(1, 1), obstacle_count)
+
+      assert board.state === :lost
+    end
+  end
+
+  describe "move/2" do
     test "returns a board state when grid is moved and there is nothing else to play. No win" do
       grid = %Grid{
         cells: %{

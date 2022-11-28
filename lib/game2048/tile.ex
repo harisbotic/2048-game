@@ -18,7 +18,7 @@ defmodule Game2048.Tile do
   @enforce_keys [:value, :type, :merged]
   defstruct [:value, :type, :merged]
 
-  @type type :: :empty | :number
+  @type type :: :empty | :number | :obstacle
   @type t :: %Tile{value: integer, type: type, merged: boolean}
 
   @spec merge(Game2048.Tile.t(), Game2048.Tile.t()) ::
@@ -31,13 +31,17 @@ defmodule Game2048.Tile do
     end
   end
 
-  @spec new(integer() | :empty) :: Game2048.Tile.t()
+  @spec new(integer() | :empty | :obstacle) :: Game2048.Tile.t()
   def new(value) when is_integer(value) do
     new(:number, value)
   end
 
   def new(:empty) do
     new(:empty, 0)
+  end
+
+  def new(:obstacle) do
+    new(:obstacle, -1)
   end
 
   def new(_) do

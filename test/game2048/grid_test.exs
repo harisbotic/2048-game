@@ -173,8 +173,8 @@ defmodule Game2048.GridTest do
     end
   end
 
-  describe "spawn_tile/3" do
-    test "spawns tile in empty cell with correct value" do
+  describe "place_tile/3" do
+    test "places tile in empty cell with correct value" do
       grid = %Grid{
         cells: %{
           %Coordinate{x: 1, y: 1} => Tile.new(:empty),
@@ -183,7 +183,7 @@ defmodule Game2048.GridTest do
         size: %GridSize{column_count: 2, row_count: 1}
       }
 
-      result_grid = Grid.spawn_tile(grid, %Coordinate{x: 1, y: 1}, Tile.new(2))
+      result_grid = Grid.place_tile(grid, %Coordinate{x: 1, y: 1}, Tile.new(2))
 
       assert result_grid.cells == %{
                %Coordinate{x: 1, y: 1} => Tile.new(2),
@@ -192,10 +192,10 @@ defmodule Game2048.GridTest do
     end
   end
 
-  describe "spawn_tile_at_random_empty_place/1" do
+  describe "spawn_tile_at_random_empty_place/2" do
     test "returns a board with a random tile added" do
       grid = Grid.new(GridSize.new(2, 2))
-      new_grid = Grid.spawn_tile_at_random_empty_place(grid, 5)
+      new_grid = Grid.spawn_tile_at_random_empty_place(grid, Tile.new(5))
 
       assert new_grid.cells
              |> Enum.filter(fn {_, tile} -> tile.type == :number end)
