@@ -1,6 +1,11 @@
 defmodule Game2048.Coordinate do
   @moduledoc """
-  Represents a coordinate on a Game2048.Grid
+  A Coordinate is a 2D point on a Game2048.Grid
+
+  * x is the column index.
+  * y is the row index.
+
+  They are 1-based indexes.
   """
 
   alias __MODULE__

@@ -15,11 +15,21 @@ defmodule Game2048.Tile do
 
   alias __MODULE__
 
-  @enforce_keys [:id, :value, :type, :merged]
-  defstruct [:id, :value, :type, :merged]
+  @enforce_keys [:value, :type, :merged]
+  defstruct [:value, :type, :merged]
 
   @type type :: :empty | :number
-  @type t :: %Tile{id: String.t(), value: integer, type: type, merged: boolean}
+  @type t :: %Tile{value: integer, type: type, merged: boolean}
+
+  @spec merge(Game2048.Tile.t(), Game2048.Tile.t()) ::
+          Game2048.Tile.t() | {:error, :invalid_tile_type}
+  def merge(%Tile{} = tile1, %Tile{} = tile2) do
+    if tile1.type != :number or tile2.type != :number do
+      {:error, :invalid_tile_type}
+    else
+      new(:number, tile1.value + tile2.value, true)
+    end
+  end
 
   @spec new(integer() | :empty) :: Game2048.Tile.t()
   def new(value) when is_integer(value) do
@@ -34,18 +44,11 @@ defmodule Game2048.Tile do
     {:error, :invalid_value_or_type}
   end
 
-  defp new(type, value) when is_atom(type) and is_integer(value) do
+  defp new(type, value, merged \\ false) when is_atom(type) and is_integer(value) do
     %Tile{
-      id: random_id(),
       value: value,
       type: type,
-      merged: false
+      merged: merged
     }
-  end
-
-  defp random_id() do
-    make_ref()
-    |> inspect()
-    |> String.replace(["Reference", "#", ".", "<", ">"], "")
   end
 end

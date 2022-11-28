@@ -7,7 +7,7 @@ defmodule Game2048.Grid do
   """
 
   alias __MODULE__
-  alias Game2048.{Coordinate, Tile}
+  alias Game2048.{GridSize, Coordinate, Tile}
 
   @vectors %{
     up: %{x: 0, y: -1},
@@ -16,13 +16,14 @@ defmodule Game2048.Grid do
     right: %{x: 1, y: 0}
   }
 
-  @enforce_keys [:cells]
+  @enforce_keys [:cells, :size]
 
-  defstruct [:cells]
+  defstruct [:cells, :size]
 
+  @type direction :: :up | :down | :left | :right
   @type cell_key :: Coordinate.t()
   @type cell_value :: Tile.t()
-  @type t :: %Grid{cells: %{cell_key => cell_value}}
+  @type t :: %Grid{cells: %{cell_key => cell_value}, size: GridSize.t()}
 
   @spec contains_combinable_cells?(Game2048.Grid.t()) :: boolean
   def contains_combinable_cells?(%Grid{cells: cells}) do
@@ -49,17 +50,47 @@ defmodule Game2048.Grid do
     |> Enum.any?()
   end
 
-  def farthest_empty_cell(%Grid{cells: cells} = grid, %Coordinate{} = coordinate, direction) do
+  @spec contains_tile_with_value?(Game2048.Grid.t(), integer()) :: boolean
+  def contains_tile_with_value?(%Grid{cells: cells}, value) do
+    cells
+    |> Enum.any?(fn {_, tile} -> tile.value == value end)
+  end
+
+  @spec get_neighbor_cells(
+          Game2048.Grid.t(),
+          Game2048.Coordinate.t(),
+          direction()
+        ) :: %{
+          farthest_empty_coordinate: Game2048.Coordinate.t(),
+          next_nonempty_coordinate: Game2048.Coordinate.t(),
+          next_nonempty_tile: nil | Game2048.Tile.t()
+        }
+  def get_neighbor_cells(%Grid{} = grid, %Coordinate{} = coordinate, direction) do
+    %{tile: next_tile, coordinate: next_coordinate} = next_cell(grid, coordinate, direction)
+
+    case next_tile do
+      %{type: :empty} ->
+        get_neighbor_cells(grid, next_coordinate, direction)
+
+      _ ->
+        %{
+          farthest_empty_coordinate: coordinate,
+          next_nonempty_tile: next_tile,
+          next_nonempty_coordinate: next_coordinate
+        }
+    end
+  end
+
+  @spec next_cell(Game2048.Grid.t(), Game2048.Coordinate.t(), direction) :: %{
+          coordinate: Game2048.Coordinate.t(),
+          tile: Game2048.Tile.t() | nil
+        }
+  def next_cell(%Grid{cells: cells}, %Coordinate{} = coordinate, direction) do
     next_coordinate =
       Coordinate.new(coordinate.x + @vectors[direction].x, coordinate.y + @vectors[direction].y)
 
     next_tile = cells[next_coordinate]
-    obstruction? = next_tile.type !== :empty
-
-    case obstruction? do
-      false -> farthest_empty_cell(grid, next_tile, direction)
-      true -> %{coordinate: coordinate, next: next_tile}
-    end
+    %{coordinate: next_coordinate, tile: next_tile}
   end
 
   @spec get_empty_coordinates(Game2048.Grid.t()) :: [Coordinate.t()]
@@ -69,18 +100,95 @@ defmodule Game2048.Grid do
     |> Enum.map(fn {coordinate, _} -> coordinate end)
   end
 
-  @spec new(integer(), integer()) :: Game2048.Grid.t()
-  def new(column_count, row_count) when is_integer(column_count) and is_integer(row_count) do
+  @spec merge_tiles(Game2048.Grid.t(), Game2048.Coordinate.t(), Game2048.Coordinate.t()) ::
+          Game2048.Grid.t()
+  def merge_tiles(%Grid{cells: cells} = grid, %Coordinate{} = from, %Coordinate{} = to) do
+    %Grid{
+      grid
+      | cells:
+          cells
+          |> Map.put(to, Tile.merge(cells[from], cells[to]))
+          |> Map.put(from, Tile.new(:empty))
+    }
+  end
+
+  @spec move_tile(Game2048.Grid.t(), Game2048.Coordinate.t(), Game2048.Coordinate.t()) ::
+          Game2048.Grid.t()
+  def move_tile(%Grid{cells: cells} = grid, %Coordinate{} = from, %Coordinate{} = to) do
+    if from === to do
+      grid
+    else
+      %Grid{
+        grid
+        | cells:
+            cells
+            |> Map.put(to, cells[from])
+            |> Map.put(from, Tile.new(:empty))
+      }
+    end
+  end
+
+  @spec spawn_tile(Game2048.Grid.t(), Game2048.Coordinate.t(), Game2048.Tile.t()) ::
+          Game2048.Grid.t()
+  def spawn_tile(%Grid{cells: cells} = grid, %Coordinate{} = coordinate, %Tile{} = tile) do
+    %Grid{
+      grid
+      | cells:
+          cells
+          |> Map.put(coordinate, tile)
+    }
+  end
+
+  @spec spawn_tile_at_random_empty_place(Game2048.Grid.t(), integer) :: Game2048.Grid.t()
+  def spawn_tile_at_random_empty_place(%Grid{} = grid, tile_value) do
+    empty_coordinate = Enum.random(Grid.get_empty_coordinates(grid))
+    Grid.spawn_tile(grid, empty_coordinate, Tile.new(tile_value))
+  end
+
+  @spec move_tiles_in_direction(Game2048.Grid.t(), direction()) :: Game2048.Grid.t()
+  def move_tiles_in_direction(%Grid{size: size} = grid, direction) do
+    %{column_count: c, row_count: r} = size
+
+    columns_order = if direction == :right, do: c..1, else: 1..c
+    rows_order = if direction == :down, do: r..1, else: 1..r
+
+    for x <- columns_order, y <- rows_order, reduce: grid do
+      grid ->
+        coordinate = Coordinate.new(x, y)
+        tile = grid.cells[coordinate]
+
+        %{
+          farthest_empty_coordinate: farthest_empty_coordinate,
+          next_nonempty_tile: next_nonempty_tile,
+          next_nonempty_coordinate: next_nonempty_coordinate
+        } = Grid.get_neighbor_cells(grid, coordinate, direction)
+
+        case next_nonempty_tile do
+          %{type: :number, value: value} when value == tile.value ->
+            Grid.merge_tiles(
+              grid,
+              coordinate,
+              next_nonempty_coordinate
+            )
+
+          _ ->
+            Grid.move_tile(
+              grid,
+              coordinate,
+              farthest_empty_coordinate
+            )
+        end
+    end
+  end
+
+  @spec new(GridSize.t()) :: Game2048.Grid.t()
+  def new(%GridSize{column_count: column_count, row_count: row_count} = grid_size) do
     cells =
       for x <- 1..column_count,
           y <- 1..row_count,
           into: %{},
           do: {Coordinate.new(x, y), Tile.new(:empty)}
 
-    %Grid{cells: cells}
-  end
-
-  def new(_columns_count, _rows_count) do
-    {:error, :invalid_dimension}
+    %Grid{cells: cells, size: grid_size}
   end
 end
