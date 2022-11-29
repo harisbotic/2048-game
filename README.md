@@ -11,7 +11,9 @@ My first ever Elixir line of code has been written here.
 
 I wanted to challenge my self and learn a new language/framework (the basics for start) in less then a week so I choose Elixir and Phoenix LiveView even though I was never in touch with them before. Phoenix LV makes the multiplayer implementatino of the game much easier.
  
- It was a very fun journey btw!
+It was a very fun journey btw!
+ 
+Note: Regarding the multiplayer mode, I have the implementation in my head and I know it would take somebody who know Pheonix LiveView better 20 minutes to write it in this project but I don't have much more time at the moment and it would take me a bit more time. Maybe I will do it later.
  
 # Project Requirements
 
