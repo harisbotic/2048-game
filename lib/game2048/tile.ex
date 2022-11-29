@@ -6,6 +6,7 @@ defmodule Game2048.Tile do
 
     * :empty - An empty tile with fixed value of 0
     * :number - A tile with a number
+    * :obstacle - A tile that cannot be moved or combined with a value of -1
 
   A Tile can have one of two states:
 

@@ -8,6 +8,7 @@ defmodule Game2048.Board do
   alias Game2048.{Grid, GridSize, Tile}
 
   @tile_spawn_value_after_move 1
+  @starting_tile_value 2
 
   @enforce_keys [:grid, :state]
   defstruct [:grid, :state]
@@ -26,6 +27,7 @@ defmodule Game2048.Board do
       for _ <- 1..obstacle_count, reduce: Grid.new(grid_size) do
         grid -> Grid.spawn_tile_at_random_empty_place(grid, Tile.new(:obstacle))
       end
+      |> Grid.spawn_tile_at_random_empty_place(Tile.new(@starting_tile_value))
 
     %Board{
       grid: grid,

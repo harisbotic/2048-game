@@ -17,7 +17,7 @@ defmodule Game2048Web.Router do
   scope "/", Game2048Web do
     pipe_through :browser
 
-    get "/", PageController, :index
+    live "/", PlayLive, :index
   end
 
   # Other scopes may use custom stacks.

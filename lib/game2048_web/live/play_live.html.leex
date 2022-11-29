@@ -1,0 +1,41 @@
+<%= f = form_for :board_config, "#", phx_submit: :new_game %>
+  <%= label f, :grid_size %>
+  <%= text_input f, :grid_size, placeholder: "Rows", value: @grid_size %>
+
+  <%= label f, :obstacle_count %>
+  <%= text_input f, :obstacle_count, placeholder: "Obstacles", value: @obstacle_count %>
+
+  <%= submit "New Game" %>
+</form>
+
+
+<div class="play-container" phx-keydown="keydown" phx-target="window">
+  <%= for y <- 1..@grid_size do %>
+    <div class="grid-column">
+      <%= for x <- 1..@grid_size do %>
+        <%= if @board.grid.cells[Coordinate.new(x, y)] do %>
+          <div class="cell">
+            <div class="tile-<%= @board.grid.cells[Coordinate.new(x, y)].type %>">
+              <%= case @board.grid.cells[Coordinate.new(x, y)].type do
+                :number -> @board.grid.cells[Coordinate.new(x, y)].value
+                :empty -> "-"
+                :obstacle -> "x"
+              end %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<div class="status">
+  Status: <%= @board.state %>
+</div>
+
+<div class="controls">
+  <button phx-click="move" phx-value-direction="up">Up</button>
+  <button phx-click="move" phx-value-direction="down">Down</button>
+  <button phx-click="move" phx-value-direction="left">Left</button>
+  <button phx-click="move" phx-value-direction="right">Right</button>
+</div>
